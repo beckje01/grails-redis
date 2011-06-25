@@ -13,4 +13,5 @@ class RedisTagLib {
 
         out << redisService.memoize(key, expire) { body() ?: "" }
     }
+
 }

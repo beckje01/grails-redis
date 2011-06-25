@@ -56,9 +56,18 @@ class RedisService {
         }
     }
 
+
+
     // SET/GET a value on a Redis key
-    def memoize(String key, Integer expire = null, Closure closure) {
+    def memoize(String key, Integer expire = null,String group = null, Closure closure) {
         withRedis { Jedis redis ->
+            def baseKey = key
+            if(group) {
+               key=group+"g:"+key
+               //todo add key to group set
+            }
+
+
             def result = redis.get(key)
             if (!result) {
                 log.debug "cache miss: $key"

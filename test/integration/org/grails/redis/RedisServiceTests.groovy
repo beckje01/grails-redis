@@ -50,6 +50,24 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals 1, calledCount
         assertEquals "foo", cacheHitResult
     }
+
+    def testMemoizeGroup()
+    {
+        def calledCount = 0
+        def cacheMissClosure = {
+            calledCount += 1
+            return "foo"
+        }
+
+        def cacheMissResult = redisService.memoize("key",null,"group",cacheMissClosure)
+
+        assertEquals 1, calledCount
+        assertEquals "foo", cacheMissResult
+        assertEquals NO_EXPIRATION_TTL, redisService.ttl("groupg:key")
+        assertEquals "foo", redisService.get("groupg:key")
+        
+
+    }
     
     void testMemoizeKeyWithExpire() {
         assertEquals NO_EXPIRATION_TTL, redisService.ttl("mykey")
@@ -117,6 +135,8 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals expectedHash, result
         assertTrue NO_EXPIRATION_TTL < redisService.ttl("mykey")
     }
+
+
 
     def testWithTransaction() {
         redisService.withRedis { Jedis redis ->
