@@ -68,6 +68,10 @@ class RedisService {
       }
     }
 
+    def memoize(String key,String group, Closure closure)
+    {
+      return memoize(key,null,group,closure)
+    }
 
     // SET/GET a value on a Redis key
     def memoize(String key, Integer expire = null,String group = null, Closure closure) {

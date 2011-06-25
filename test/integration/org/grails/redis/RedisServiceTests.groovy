@@ -59,7 +59,7 @@ class RedisServiceTests extends GroovyTestCase {
             return "foo"
         }
 
-        def cacheMissResult = redisService.memoize("key",null,"group",cacheMissClosure)
+        def cacheMissResult = redisService.memoize("key","group",cacheMissClosure)
 
         assertEquals 1, calledCount
         assertEquals "foo", cacheMissResult
@@ -67,7 +67,7 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals "foo", redisService.get("groupg:key")
 
 
-        def cacheHitResult = redisService.memoize("key",null,"group", cacheMissClosure)
+        def cacheHitResult = redisService.memoize("key","group", cacheMissClosure)
         assertEquals 1, calledCount
         assertEquals "foo", cacheHitResult
     }
@@ -80,7 +80,7 @@ class RedisServiceTests extends GroovyTestCase {
             return "foo"
         }
 
-        def cacheMissResult = redisService.memoize("key",null,"group",cacheClosure)
+        def cacheMissResult = redisService.memoize("key","group",cacheClosure)
 
         assertEquals 1, calledCount
         assertEquals "foo", cacheMissResult
@@ -89,9 +89,48 @@ class RedisServiceTests extends GroovyTestCase {
 
         redisService.flushGroup("group")
 
-        def cacheResult = redisService.memoize("key",null,"group", cacheClosure)
+        def cacheResult = redisService.memoize("key","group", cacheClosure)
         assertEquals 2, calledCount
-        assertEquals "foo", cacheHitResult
+        assertEquals "foo", cacheResult
+    }
+
+    def testFlushGroupWithMultiKeys()
+    {
+        def calledCount = 0
+        def cacheClosure = {
+            calledCount += 1
+            return "foo"
+        }
+
+        def calledCountBob = 0
+        def cacheClosureBob = {
+            calledCountBob += 1
+            return "Bob Dole"
+        }
+
+        def foores = redisService.memoize("fooKey","group",cacheClosure)
+        def bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+
+        assertEquals "foo", foores
+        assertEquals 1, calledCount
+
+        assertEquals "Bob Dole",bobres
+        assertEquals 1, calledCountBob
+
+        bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+        
+        assertEquals "Bob Dole",bobres
+        assertEquals 1, calledCountBob
+
+        redisService.flushGroup("group")
+
+        assertNull  redisService.get("groupg:fooKey")
+        assertNull  redisService.get("groupg:bobKey")
+
+        bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+
+        assertEquals "Bob Dole",bobres
+        assertEquals 2, calledCountBob
     }
 
     
