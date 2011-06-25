@@ -65,9 +65,35 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals "foo", cacheMissResult
         assertEquals NO_EXPIRATION_TTL, redisService.ttl("groupg:key")
         assertEquals "foo", redisService.get("groupg:key")
-        
 
+
+        def cacheHitResult = redisService.memoize("key",null,"group", cacheMissClosure)
+        assertEquals 1, calledCount
+        assertEquals "foo", cacheHitResult
     }
+
+    def testFlushGroup()
+    {
+        def calledCount = 0
+        def cacheClosure = {
+            calledCount += 1
+            return "foo"
+        }
+
+        def cacheMissResult = redisService.memoize("key",null,"group",cacheClosure)
+
+        assertEquals 1, calledCount
+        assertEquals "foo", cacheMissResult
+        assertEquals NO_EXPIRATION_TTL, redisService.ttl("groupg:key")
+        assertEquals "foo", redisService.get("groupg:key")
+
+        redisService.flushGroup("group")
+
+        def cacheResult = redisService.memoize("key",null,"group", cacheClosure)
+        assertEquals 2, calledCount
+        assertEquals "foo", cacheHitResult
+    }
+
     
     void testMemoizeKeyWithExpire() {
         assertEquals NO_EXPIRATION_TTL, redisService.ttl("mykey")

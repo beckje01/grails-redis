@@ -57,14 +57,25 @@ class RedisService {
     }
 
 
+    def flushGroup(String group) {
+      withRedis { Jedis redis ->
+        def groupkey = "group:"+group
+        def keys = redis.smembers(groupkey)
+        keys.each{
+          redis.del(it)
+        }
+        redis.del(groupkey)
+      }
+    }
+
 
     // SET/GET a value on a Redis key
     def memoize(String key, Integer expire = null,String group = null, Closure closure) {
         withRedis { Jedis redis ->
-            def baseKey = key
+
+            //If we are using a group we need to adjust the key used.
             if(group) {
                key=group+"g:"+key
-               //todo add key to group set
             }
 
 
@@ -77,6 +88,10 @@ class RedisService {
                         redis.set(key, result as String)
                     } else {
                         redis.setex(key, expire, result as String)
+                    }
+                    //When using a group for a new key we add it to the set for tracking
+                    if(group) {
+                      redis.sadd("group:"+group,key)
                     }
                 }
             } else {
