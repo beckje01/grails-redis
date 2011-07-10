@@ -56,8 +56,11 @@ class RedisService {
         }
     }
 
-
-    def flushGroup(String group) {
+    def memoize(String key, Integer expire, Closure closure) {
+        memoize(key, [expire: expire], closure)
+    
+    }
+def flushGroup(String group) {
       withRedis { Jedis redis ->
         def groupkey = "group:"+group
         def keys = redis.smembers(groupkey)
@@ -74,7 +77,8 @@ class RedisService {
     }
 
     // SET/GET a value on a Redis key
-    def memoize(String key, Integer expire = null,String group = null, Closure closure) {
+    //def memoize(String key, Integer expire = null,String group = null, Closure closure) {
+    def memoize(String key, Map options = [:], Closure closure) {
         withRedis { Jedis redis ->
 
             //If we are using a group we need to adjust the key used.
@@ -88,10 +92,10 @@ class RedisService {
                 log.debug "cache miss: $key"
                 result = closure(redis)
                 if (result) {
-                    if (!expire) { 
+                    if (!options?.expire) {
                         redis.set(key, result as String)
                     } else {
-                        redis.setex(key, expire, result as String)
+                        redis.setex(key, options.expire, result as String)
                     }
                     //When using a group for a new key we add it to the set for tracking
                     if(group) {
@@ -105,7 +109,11 @@ class RedisService {
         }
     }
 
-    def memoizeHash(String key, Integer expire = null, Closure closure) {
+    def memoizeHash(String key, Integer expire, Closure closure) {
+        memoizeHash(key, [expire: expire], closure)
+    }
+
+    def memoizeHash(String key, Map options = [:], Closure closure) {
         withRedis { Jedis redis ->
             def hash = redis.hgetAll(key)
             if (!hash) {
@@ -113,7 +121,7 @@ class RedisService {
                 hash = closure(redis)
                 if (hash) {
                     redis.hmset(key, hash)
-                    if (expire) redis.expire(key, expire)
+                    if (options?.expire) redis.expire(key, options.expire)
                 }
             } else {
                 log.debug "cache hit : $key = $hash"
@@ -122,10 +130,14 @@ class RedisService {
         }
     }
 
+    def memoizeHashField(String key, String field, Integer expire, Closure closure) {
+        memoizeHashField(key, field, [expire: expire], closure)
+    }
+
     // HSET/HGET a value on a Redis hash at key.field
     // if expire is not null it will be the expire for the whole hash, not this value
     // and will only be set if there isn't already a TTL on the hash
-    def memoizeHashField(String key, String field, Integer expire = null, Closure closure) {
+    def memoizeHashField(String key, String field, Map options = [:], Closure closure) {
         withRedis { Jedis redis ->
             def result = redis.hget(key, field)
             if (!result) {
@@ -133,7 +145,7 @@ class RedisService {
                 result = closure(redis)
                 if (result) {
                     redis.hset(key, field, result as String)
-                    if (expire && redis.ttl(key) == NO_EXPIRATION_TTL) redis.expire(key, expire)
+                    if (options?.expire && redis.ttl(key) == NO_EXPIRATION_TTL) redis.expire(key, options.expire)
                 }
             } else {
                 log.debug "cache hit : $key.$field = $result"
@@ -142,10 +154,14 @@ class RedisService {
         }
     }
 
+    def memoizeScore(String key, String member, Integer expire, Closure closure) {
+        memoizeScore(key, member, [expire: expire], closure)
+    }
+
     // set/get a 'double' score within a sorted set
     // if expire is not null it will be the expire for the whole zset, not this value
     // and will only be set if there isn't already a TTL on the zset
-    def memoizeScore(String key, String member, Integer expire = null, Closure closure) {
+    def memoizeScore(String key, String member, Map options = [:], Closure closure) {
         withRedis { Jedis redis ->
             def score = redis.zscore(key, member)
             if (!score) {
@@ -153,7 +169,7 @@ class RedisService {
                 score = closure(redis)
                 if (score) {
                     redis.zadd(key, score, member)
-                    if (expire && redis.ttl(key) == NO_EXPIRATION_TTL) redis.expire(key, expire)
+                    if (options?.expire && redis.ttl(key) == NO_EXPIRATION_TTL) redis.expire(key, options.expire)
                 }
             } else {
                 log.debug "cache hit : $key.$member = $score"
@@ -162,7 +178,11 @@ class RedisService {
         }
     }
 
-    List memoizeDomainList(Class domainClass, String key, Integer expire = null, Closure closure) {
+    List memoizeDomainList(Class domainClass, String key, Integer expire, Closure closure) {
+        memoizeDomainList(domainClass, key, [expire: expire], closure)
+    }
+
+    List memoizeDomainList(Class domainClass, String key, Map options = [:], Closure closure) {
         List<Long> idList = getIdListFor(key)
         if (idList) return hydrateDomainObjectsFrom(domainClass, idList)
 
@@ -170,13 +190,17 @@ class RedisService {
             closure(redis)
         }
 
-        saveIdListTo(key, domainList, expire)
+        saveIdListTo(key, domainList, options.expire)
 
         return domainList
     }
 
+    List<Long> memoizeDomainIdList(Class domainClass, String key, Integer expire, Closure closure) {
+        memoizeDomainIdList(domainClass, key, [expire: expire], closure)
+    }
+
     // used when we just want the list of Ids back rather than hydrated objects
-    List<Long> memoizeDomainIdList(Class domainClass, String key, Integer expire = null, Closure closure) {
+    List<Long> memoizeDomainIdList(Class domainClass, String key, Map options = [:], Closure closure) {
         List<Long> idList = getIdListFor(key)
         if (idList) return idList
 
@@ -184,7 +208,7 @@ class RedisService {
             closure(redis)
         }
 
-        saveIdListTo(key, domainList, expire)
+        saveIdListTo(key, domainList, options.expire)
 
         return getIdListFor(key)
     }
