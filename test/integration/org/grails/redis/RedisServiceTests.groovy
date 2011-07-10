@@ -59,7 +59,7 @@ class RedisServiceTests extends GroovyTestCase {
             return "foo"
         }
 
-        def cacheMissResult = redisService.memoize("key","group",cacheMissClosure)
+        def cacheMissResult = redisService.memoize("key",[group:"group"],cacheMissClosure)
 
         assertEquals 1, calledCount
         assertEquals "foo", cacheMissResult
@@ -67,7 +67,7 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals "foo", redisService.get("groupg:key")
 
 
-        def cacheHitResult = redisService.memoize("key","group", cacheMissClosure)
+        def cacheHitResult = redisService.memoize("key",[group:"group"], cacheMissClosure)
         assertEquals 1, calledCount
         assertEquals "foo", cacheHitResult
     }
@@ -80,7 +80,7 @@ class RedisServiceTests extends GroovyTestCase {
             return "foo"
         }
 
-        def cacheMissResult = redisService.memoize("key","group",cacheClosure)
+        def cacheMissResult = redisService.memoize("key",[group:"group"],cacheClosure)
 
         assertEquals 1, calledCount
         assertEquals "foo", cacheMissResult
@@ -89,7 +89,7 @@ class RedisServiceTests extends GroovyTestCase {
 
         redisService.flushGroup("group")
 
-        def cacheResult = redisService.memoize("key","group", cacheClosure)
+        def cacheResult = redisService.memoize("key",[group:"group"], cacheClosure)
         assertEquals 2, calledCount
         assertEquals "foo", cacheResult
     }
@@ -108,8 +108,8 @@ class RedisServiceTests extends GroovyTestCase {
             return "Bob Dole"
         }
 
-        def foores = redisService.memoize("fooKey","group",cacheClosure)
-        def bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+        def foores = redisService.memoize("fooKey",[group:"group"],cacheClosure)
+        def bobres = redisService.memoize("bobKey",[group:"group"],cacheClosureBob)
 
         assertEquals "foo", foores
         assertEquals 1, calledCount
@@ -117,7 +117,7 @@ class RedisServiceTests extends GroovyTestCase {
         assertEquals "Bob Dole",bobres
         assertEquals 1, calledCountBob
 
-        bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+        bobres = redisService.memoize("bobKey",[group:"group"],cacheClosureBob)
         
         assertEquals "Bob Dole",bobres
         assertEquals 1, calledCountBob
@@ -127,7 +127,7 @@ class RedisServiceTests extends GroovyTestCase {
         assertNull  redisService.get("groupg:fooKey")
         assertNull  redisService.get("groupg:bobKey")
 
-        bobres = redisService.memoize("bobKey","group",cacheClosureBob)
+        bobres = redisService.memoize("bobKey",[group:"group"],cacheClosureBob)
 
         assertEquals "Bob Dole",bobres
         assertEquals 2, calledCountBob
