@@ -1,4 +1,4 @@
-package org.grails.redis
+package grails.plugin.redis
 
 import grails.test.TagLibUnitTestCase
 
@@ -11,10 +11,6 @@ class RedisTagLibTests extends TagLibUnitTestCase {
     protected void setUp() {
         super.setUp()
         tagLib.redisService = redisService
-    }
-
-    protected void tearDown() {
-        super.tearDown()
     }
 
     void testMemoizeMissingRequiredKey() {
@@ -39,7 +35,7 @@ class RedisTagLibTests extends TagLibUnitTestCase {
     void testMemoizeWithoutExpiresHasNoTTL() {
         tagLib.memoize(createParams([key: "no-ttl-test"])) {-> CONTENTS }
         assertTagLibContentsEquals CONTENTS
-        assertEquals redisService.NO_EXPIRATION_TTL, redisService.ttl("no-ttl-test") 
+        assertEquals redisService.NO_EXPIRATION_TTL, redisService.ttl("no-ttl-test")
     }
 
     void testMemoizeWithExpireHasTTL() {
@@ -48,7 +44,7 @@ class RedisTagLibTests extends TagLibUnitTestCase {
         assertTrue redisService.ttl("ttl-test") > 0
     }
 
-    def assertTagLibContentsEquals(String expectedContents) {
+    private assertTagLibContentsEquals(String expectedContents) {
         def result = tagLib.out.toString()
         assertEquals expectedContents, result
         return result
@@ -58,4 +54,3 @@ class RedisTagLibTests extends TagLibUnitTestCase {
         return ([key: null, expire: null] + params) as Binding
     }
 }
-
